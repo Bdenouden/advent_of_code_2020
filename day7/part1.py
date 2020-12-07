@@ -5,7 +5,6 @@ shinyBagList = {}  # dict containing all bags that can directly hold a shiny gol
 bagList = {}    # dict containing all other bags
 
 with open(sys.path[0] + '/input.txt') as f:
-    entry = ''
     for line in f:
         # regex space trims splitted parts and removes " bag.\n OR bags.\n"
         line = re.sub(" bags?.\n", '', line)
