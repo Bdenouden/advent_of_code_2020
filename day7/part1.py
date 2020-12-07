@@ -8,7 +8,7 @@ with open(sys.path[0] + '/input.txt') as f:
     for line in f:
         # regex space trims splitted parts and removes " bag.\n OR bags.\n"
         line = re.sub(" bags?.\n", '', line)
-        bagSpec = re.split(" bags contain \\d+ | bags?, \\d+ ", line)
+        bagSpec = re.split(r" bags contain \d+ | bags?, \d+ ", line)
         # print(bagSpec)
         if("shiny gold" in bagSpec[1:]):
             shinyBagList[bagSpec[0]] = bagSpec[1:]

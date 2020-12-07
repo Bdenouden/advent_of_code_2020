@@ -6,7 +6,7 @@ bagList = {}    # dict containing all bags
 with open(sys.path[0] + '/input.txt') as f:
     for line in f:
         line = re.sub(" bags?[.,]?|\n|contain |no other", '', line)
-        bagSpec = re.split("(\\d \\w+ \\w+)", line)
+        bagSpec = re.split(r"(\d \w+ \w+)", line)
         bagSpec = [i.strip() for i in bagSpec if i.strip()]  # remove empty values
         bagList[bagSpec[0]] = bagSpec[1:]
 
