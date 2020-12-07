@@ -33,3 +33,4 @@ def countContainedBags(bag):
 
 print(f"The shiny gold bag contains a total of {countContainedBags('shiny gold')} bags") # check content of shiny gold bag
 
+# CORRECT!
