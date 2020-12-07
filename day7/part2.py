@@ -4,7 +4,6 @@ import re
 bagList = {}    # dict containing all bags
 
 with open(sys.path[0] + '/input.txt') as f:
-    entry = ''
     for line in f:
         line = re.sub(" bags?[.,]?|\n|contain |no other", '', line)
         bagSpec = re.split("(\\d \\w+ \\w+)", line)
@@ -13,9 +12,8 @@ with open(sys.path[0] + '/input.txt') as f:
 
 
 def countContainedBags(bag):
-    bagContent = bagList[bag]
     result = 0
-    for b in bagContent:                    # split and count the contribution of each individual bag
+    for b in bagList[bag]:                    # split and count the contribution of each individual bag
         a, bagName = b.split(' ', 1)
         amount = int(a)
         multiplicand = int(countContainedBags(bagName))
