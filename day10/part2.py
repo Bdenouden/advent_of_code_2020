@@ -19,6 +19,7 @@ for val in differences:
     if(val == 1):
         ones += 1
     elif(ones > 0):
+        # result =  P(2^(ones - 1) [- correction if more than 3 1's in a row] )
         result *= 2**(ones-1) - ((ones % 3) * (ones > 3))
         ones = 0
 
