@@ -1,9 +1,6 @@
 import sys
-from collections import Counter
 
 adapters = [0]
-
-
 with open(sys.path[0] + '/input.txt') as f:
     for line in f:
         adapters.append(int(line))
