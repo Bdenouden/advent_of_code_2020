@@ -112,6 +112,11 @@ def expandBotRight(tile, x, y):
             expandBotRight(Tile.all[tile.match[down]], x, y+len(c))
 
 def findNessy(sea):
+    """
+    Ahoy! lets go on an adventure searchin' th' `sea` fer th' monsters!
+     
+    I shall tell ye `which we 'ave spotted` once we be back
+    """
     uniqueMonsters = set()
 
     # regex pattern matching nessy
@@ -128,9 +133,7 @@ def findNessy(sea):
                     m2 = re.findall(monster2, ''.join(s[line+1][i:i+20]))
                     m3 = re.findall(monster3, ''.join(s[line+2][i:i+20]))
                     if(m1 and m2 and m3):
-                        print("A monster appeared!")
                         uniqueMonsters.add((line, i))
-                        print(f"line: {line}, i: {i}")
             if len(uniqueMonsters) > 0:
                 return uniqueMonsters
     return uniqueMonsters
@@ -147,7 +150,7 @@ Tile.fixed.append(tiles[0])
 while len(Tile.fixed) < len(Tile.all):
     for tileId in [id for id in tiles if id not in Tile.fixed]:
         checkTileMatch(Tile.all[tileId])
-    print("next loop!")
+    print("placing tiles...")
 print("Tiles placed!")
 
 refTile = getTopLeftTile()  # this is the topleft tile
@@ -165,6 +168,5 @@ for line in sea:
             hastagCount += 1
 
 print(f"#: {hastagCount}, monster: {len(uniqueMonsters)}, roughness = {hastagCount-15*len(uniqueMonsters)}")
-print('eof')
 
 # CORRECT!
