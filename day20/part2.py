@@ -1,99 +1,170 @@
 import sys
 import re
 import numpy as np
-from pprint import pprint
-from copy import deepcopy
+
+# define orientation parameters
+up, right, down, left = 0, 1, 2, 3
 
 
-class Tile():
-    def __init__(self, id, T, R, B, L, content):
+class Tile:
+    all = dict()
+    fixed = []
+
+    def __init__(self, id, content):
         self.id = id
-        self.edge = {}
-        self.edge[0] = T
-        self.edge[90] = R
-        self.edge[180] = B
-        self.edge[270] = L
-        self.rotation = 0
-        self.content = np.array(content)
-        self.match = {
-            0: None,
-            180: None,
-            270: None,
-            90: None
-        }
-        self.isBTFlipped = False  # bottom and top flipped
-        self.flippedEdge = {
-            0: False,
-            180: False,
-            270: False,
-            90: False
-        }
+        self.content = content
+        self.match = {dir: None for dir in [up, right, down, left]}
 
-    def checkIfFlipped(self):
-        temp = True
-        for k,e in self.match.items():
-            if e is not None:
-                temp *= self.flippedEdge[k]
-        self.isBTFlipped = temp
-        return self.isBTFlipped
+    def getEdge(self, edge=up):
+        if(edge == up):
+            return [c for c in self.content[0]]
+        elif edge == down:
+            return [c for c in self.content[-1]]
+        elif edge == right:
+            return [c[-1] for c in self.content]
+        elif edge == left:
+            return [c[0] for c in self.content]
+        else:
+            exit(f"Invalid edge called for tile {self.id}")
 
-tiles = []
+    def getContent(self):
+        return np.array([line[1:-1] for line in self.content[1:-1]])
 
-with open(sys.path[0] + '/input.txt') as f:
-    for line in f:
-        line = line.strip()
-        newId = re.findall(r"\d+", line)
-        if not line:
-            continue
-        elif newId:
-            id = int(newId[0])
-            row = 0
-            R = ''
-            L = ''
-            T = ''
-            content = []
+    def rotateCW(self, k):
+        self.content = np.rot90(self.content, k=k, axes=(1, 0))
 
-        else:  # append tile to current tile if applicable and fix orientation clockwise
-            L += line[0]
-            R += line[9]
+    def flipud(self):
+        self.content = np.flipud(self.content)
 
-            if row == 0:
-                T = line
-            elif row == 9:
-                tiles.append(Tile(id, T, R, line[::-1], L[::-1], content))
-            else:
-                content.append(line[1:9])
-            row += 1
+    @classmethod
+    def fromInput(cls, string):
+        info = string.strip().split("\n")
+        id = re.findall(r"\d+", info[0])[0]
+        content = np.array([[c for c in line] for line in info[1:]])
+        cls.all[id] = cls(id, content)
 
 
-print(f"{len(tiles)} tiles were found")
+def checkFixedEdges(tile):
+    """
+    Move the `tile` around the edges of the fixed tiles until it fits, 
+    then ensure all adjacent tiles are added to the tile.match dict.
+
+    Returns `True` if the tile could be fitted to the fixed tiles, else `False`
+    """
+    succes = False
+    for refTile in [Tile.all[id] for id in Tile.fixed]:
+        for dir in [dir for dir in refTile.match if refTile.match[dir] is None]:
+            dir2 = (dir+2) % 4
+            if np.array_equal(refTile.getEdge(dir), tile.getEdge(dir2)):
+                if(refTile.match[dir] is not None):
+                    exit(
+                        f"refTile {refTile.id} matches both {refTile.match[dir]} and {tile.id} on the same side")
+                refTile.match[dir] = tile.id
+                tile.match[dir2] = refTile.id
+                succes = True
+    return succes
 
 
-def checkForEdgeMatch(tile1, tile2):
-    for key1, edge1 in tile1.edge.items():
-        edge = edge1[::-1]
-        # print(f"Checking tile {tile1.id} edge {key1} {edge} against {tile2.id} {tile2.edge}")
-        for key2, edge2 in tile2.edge.items():
-            if(edge == edge2):
-                # print(f"Match: {tile1.id} edge {key1} connects to {tile2.id} edge {key2}")
-                tile1.match[key1] = tile2.id
-                tile2.rotation = (key1 + tile1.rotation - key2 - 180) % 360
-            elif(edge == edge2[::-1]):
-                # print(f"Match: {tile1.id} edge {key1} connects to {tile2.id} edge {key2} Flipped")
-                tile1.match[key1] = tile2.id
-                tile1.flippedEdge[key1] = True # returns true for each tile bordering a flipped tile
+def checkTileMatch(tile):
+    """
+    Try to attach the `tile` argument to the fixed tiles
+    """
+    for f in ['non-flipped', 'flipped']:
+        if(f == 'flipped'):
+            tile.flipud()
+        for k in [0, 1, 1, 1]:      # check each rotation, first no rotation
+            tile.rotateCW(k)
+            if checkFixedEdges(tile):
+                Tile.fixed.append(tile.id)
+                return
+        tile.rotateCW(1)  # restore original position before flipping
+    tile.flipud()  # restore original position before returning
+    return
 
 
-# find possible neighbors
-for tile1 in tiles:
-    for tile2 in tiles:
-        # don't check against self
-        if tile1 == tile2:
-            continue
-        checkForEdgeMatch(tile1, tile2)
-    tile1.checkIfFlipped()
-    if len([True for e in tile1.match.values() if e is not None]) == 2:
-        print(f"{tile1.id} is a corner\n\tRotation = {tile1.rotation}\n\tmatches = {tile1.match}")
-print(f"EOF")
+def getTopLeftTile():
+    for tile in Tile.all.values():
+        if (
+            tile.match[up] is None
+            and tile.match[right] is not None
+            and tile.match[down] is not None
+            and tile.match[left] is None
+        ):
+            return tile.id
+    exit("Could not find topleft tile")
 
-# left top corner is tile with id 1093
+
+def expandBotRight(tile, x, y):
+    """
+    Expands the global variable `sea` starting at the topleft most tile 
+    """
+    global sea
+    c = tile.getContent()
+    for yi in range(y, y+8):
+        for xi in range(x, x+8):
+            sea[yi][xi] = c[yi % 8][xi % 8]
+
+    if tile.match[right] is not None:
+        expandBotRight(Tile.all[tile.match[right]], x+len(c[0]), y)
+
+    if (x == 0 and y < len(sea)):
+        if tile.match[down] is not None:
+            expandBotRight(Tile.all[tile.match[down]], x, y+len(c))
+
+def findNessy(sea):
+    uniqueMonsters = set()
+
+    # regex pattern matching nessy
+    monster1 = r".{18}#"
+    monster2 = r"#.{4}##.{4}##.{4}###"
+    monster3 = r".#(?:.{2}#){5}"
+
+    for k in [0, 1, 1, 1]:
+        srot = np.rot90(sea, k=k, axes=(1, 0))
+        for s in [srot, np.flipud(srot)]:
+            for line in range(len(s[:-3])):
+                for i in range(len(s[line][:-19])):
+                    m1 = re.findall(monster1, ''.join(s[line][i:i+20]))
+                    m2 = re.findall(monster2, ''.join(s[line+1][i:i+20]))
+                    m3 = re.findall(monster3, ''.join(s[line+2][i:i+20]))
+                    if(m1 and m2 and m3):
+                        print("A monster appeared!")
+                        uniqueMonsters.add((line, i))
+                        print(f"line: {line}, i: {i}")
+            if len(uniqueMonsters) > 0:
+                return uniqueMonsters
+    return uniqueMonsters
+
+
+# get tiles from input file
+f = open(sys.path[0] + '/input.txt').read().split("\n\n")
+for tile in f:
+    Tile.fromInput(tile)
+
+tiles = list(Tile.all.keys())
+Tile.fixed.append(tiles[0])
+
+while len(Tile.fixed) < len(Tile.all):
+    for tileId in [id for id in tiles if id not in Tile.fixed]:
+        checkTileMatch(Tile.all[tileId])
+    print("next loop!")
+print("Tiles placed!")
+
+refTile = getTopLeftTile()  # this is the topleft tile
+length = 12*8   # square root of the amount of tiles multiplied by the size of their content without edges
+sea = np.array([[' ']*length for _ in range(length)])
+expandBotRight(Tile.all[refTile], 0, 0)
+
+uniqueMonsters = findNessy(sea)
+print(f"{len(uniqueMonsters)} monsters encoutered")
+
+hastagCount = 0
+for line in sea:
+    for char in line:
+        if char == '#':
+            hastagCount += 1
+
+print(f"#: {hastagCount}, monster: {len(uniqueMonsters)}, roughness = {hastagCount-15*len(uniqueMonsters)}")
+print('eof')
+
+# CORRECT!
