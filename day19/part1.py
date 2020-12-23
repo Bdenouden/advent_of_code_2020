@@ -41,7 +41,7 @@ pattern = getRule(0) + '$'
 
 exp = re.compile(pattern)
 valid = list(filter(exp.match, messages))
-    
+print(exp)
 print(f"Pattern = {pattern}, \nvalid: {len(valid)}")
 
 # CORRECT!

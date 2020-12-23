@@ -50,8 +50,9 @@ def getRule(ruleNum, depth = 0):
 pattern = getRule(0) + '$'
 
 exp = re.compile(pattern)
+print(exp)
 valid = list(filter(exp.match, messages))
 
-print(f"Pattern = {pattern}, \nvalid: {len(valid)}")
+print(f"\nvalid: {len(valid)}")
 
 # CORRECT!
